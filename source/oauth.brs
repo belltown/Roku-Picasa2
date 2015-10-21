@@ -218,7 +218,7 @@ Function oauth_refresh_tokens() As Integer
 
     rsp = http.postFromStringWithTimeout(params, 10)
 
-    print "oauth_refresh_tokens: http failure = "; http.GetFailureReason()
+    print "oauth_refresh_tokens: params: "; params; ". http failure = "; http.GetFailureReason()
     print "oauth_refresh_tokens: http response = "; rsp
 
     if http.GetResponseCode () <> 200
@@ -236,14 +236,18 @@ Function oauth_refresh_tokens() As Integer
             m.errorMsg = "Json error response: " + json.error
             status = 1
         else
+			' Extract data from the response. Note, the refresh_token is optional
             m.accessToken        = getString(json,"access_token")
             m.tokenType          = getString(json,"token_type")
             m.tokenExpiresIn     = getInteger(json,"expires_in")
-            m.refreshToken       = getString(json,"refresh_token")
+            refreshToken		 = getString(json,"refresh_token")
+			if refreshToken <> ""
+				m.refreshToken   = refreshToken
+			end if
+
             if m.accessToken     = ""    then m.errorMsg = "Missing access_token"    : status = 1
             if m.tokenType       = ""    then m.errorMsg = "Missing token_type"      : status = 1
             if m.tokenExpiresIn  = 0     then m.errorMsg = "Missing expires_in"      : status = 1
-            if m.refreshToken    = ""    then m.errorMsg = "Missing refresh_token"   : status = 1
         end if
     end if
 

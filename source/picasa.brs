@@ -59,6 +59,8 @@ End Function
 
 
 Function picasa_exec_api(url_stub="" As String, username="default" As Dynamic)
+	print "picasa_exec_api - enter"
+	
     rsp = invalid
     oa = Oauth()
     
@@ -79,9 +81,18 @@ Function picasa_exec_api(url_stub="" As String, username="default" As Dynamic)
         oa.sign(http,true)
         xml=http.getToStringWithTimeout(10)
         
-        if http.GetResponseCode() >= 400 and http.GetResponseCode() < 500
+		responseCode = http.GetResponseCode()
+		print "picasa_exec_api - attempt #"; i; " responseCode: "; responseCode
+
+        if responseCode >= 400 and responseCode < 500
             ' Expired access token or some other authentication error - refresh access token then retry
+			Sleep(500)
             status = oa.RefreshTokens()
+			
+			' Save the new tokens in the registry
+			oa.save()
+			print "New access code saved: "; oa.dump()
+			
             if i = maxAttempts
                 if status <> 0
                     ShowErrorDialog("There is a problem with the Picasa API access token" + LF + LF + oa.errorMsg + LF + LF + "Exit the channel then try again later","API Authentication Error")
@@ -91,7 +102,7 @@ Function picasa_exec_api(url_stub="" As String, username="default" As Dynamic)
                 oa.erase()
                 return invalid
             end if
-        else if http.GetResponseCode() <> 200
+        else if responseCode <> 200
             ' Some other HTTP error - retry
             if i = maxAttempts
                 ShowErrorDialog("Invalid return code from Picasa API" + LF + LF + http.GetFailureReason() + LF + LF + "Exit the channel then try again later","API Error")
@@ -104,7 +115,7 @@ Function picasa_exec_api(url_stub="" As String, username="default" As Dynamic)
         end if
     end for
     
-    print xml
+    'print xml
     rsp=ParseXML(xml)
     if rsp=invalid then
         ShowErrorDialog("Unable to parse Picasa API response" + LF + LF + "Exit the channel then try again later","API Error")
